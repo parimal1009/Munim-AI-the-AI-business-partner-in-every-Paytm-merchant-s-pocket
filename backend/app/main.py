@@ -76,7 +76,7 @@ def _mount_frontend(app: FastAPI) -> None:
     if not index.is_file():
         return
 
-    @app.get("/{full_path:path}", include_in_schema=False)
+    @app.get("/{full_path:path}", include_in_schema=False, response_model=None)
     def spa(full_path: str) -> FileResponse | JSONResponse:
         if full_path == "api" or full_path.startswith(("api/", "media/")):
             return JSONResponse({"error": {"code": "not_found", "message": "Not found"}}, status_code=404)
