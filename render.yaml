@@ -1,0 +1,21 @@
+# Render Blueprint. Create it with New -> Blueprint, then fill the secrets it asks for.
+# Service URL is https://<name>.onrender.com. Set PUBLIC_WEB_URL to that URL with no trailing slash.
+services:
+  - type: web
+    name: munim-ai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PUBLIC_WEB_URL
+        sync: false
+      - key: ENABLE_SCHEDULER
+        value: "false"

@@ -8,12 +8,13 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, text
 
 from app.api import chat_routes, core_routes, module_routes
 from app.cache import CacheInvalidationMiddleware
-from app.config import get_settings
+from app.config import ROOT, get_settings
 from app.core import RequestIdMiddleware, install_error_handlers, setup_logging
 from app.db import engine, ensure_schema, session_scope
 from app.models import Merchant
@@ -68,6 +69,24 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     shutdown()
 
 
+def _mount_frontend(app: FastAPI) -> None:
+    """Serve the Vite build on the same origin as the API. Absent during local `npm run dev`."""
+    dist = ROOT / "frontend" / "dist"
+    index = dist / "index.html"
+    if not index.is_file():
+        return
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa(full_path: str) -> FileResponse | JSONResponse:
+        if full_path == "api" or full_path.startswith(("api/", "media/")):
+            return JSONResponse({"error": {"code": "not_found", "message": "Not found"}}, status_code=404)
+        root = dist.resolve()
+        candidate = (dist / full_path).resolve()
+        if full_path and candidate.is_file() and candidate.is_relative_to(root):
+            return FileResponse(candidate)
+        return FileResponse(index)
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="Munim AI", version="1.0.0", lifespan=lifespan)
@@ -94,6 +113,7 @@ def create_app() -> FastAPI:
             c.execute(text("SELECT 1"))
         return {"status": "ready"}
 
+    _mount_frontend(app)
     return app
 
 
