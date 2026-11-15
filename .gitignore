@@ -1,0 +1,13 @@
+.env
+.venv/
+.demo-recorder/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+backend/data/
+seed.log
+frontend/node_modules/
